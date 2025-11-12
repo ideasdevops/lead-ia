@@ -91,11 +91,12 @@ elif [ -f /app/database/.initialized ]; then
     echo "ℹ️  Base de datos ya inicializada (omitiendo init_db)"
 fi
 
-# Ejecutar comando pasado como argumento o supervisor por defecto
+# Ejecutar comando pasado como argumento o Flask por defecto
+# EasyPanel maneja Nginx automáticamente, solo necesitamos Flask
 if [ "$#" -gt 0 ]; then
     exec "$@"
 else
-    echo "🎯 Iniciando Supervisor..."
-    exec /usr/bin/supervisord -c /etc/supervisor/conf.d/supervisord.conf
+    echo "🎯 Iniciando Flask (EasyPanel maneja Nginx)..."
+    exec /app/start-backend.sh
 fi
 

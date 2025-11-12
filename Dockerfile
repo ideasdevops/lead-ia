@@ -16,9 +16,8 @@ RUN npm run build
 FROM python:3.10-slim
 
 # Instalar dependencias del sistema
+# Nota: EasyPanel maneja Nginx automáticamente, no lo instalamos aquí
 RUN apt-get update && apt-get install -y \
-    nginx \
-    supervisor \
     postgresql-client \
     libpq-dev \
     gcc \
@@ -29,10 +28,7 @@ RUN apt-get update && apt-get install -y \
 RUN mkdir -p /app/backend \
     /app/frontend/dist \
     /app/logs \
-    /app/database \
-    /var/log/supervisor \
-    /etc/supervisor/conf.d \
-    /etc/nginx/sites-available
+    /app/database
 
 WORKDIR /app
 
@@ -55,8 +51,7 @@ COPY backend/ /app/backend/
 COPY --from=frontend-builder /app/frontend/dist /app/frontend/dist
 
 # Copiar archivos de configuración
-COPY deploy/nginx.conf /etc/nginx/sites-available/default
-COPY deploy/supervisor.conf /etc/supervisor/conf.d/supervisord.conf
+# Nota: EasyPanel maneja Nginx, solo necesitamos el entrypoint y scripts de backend
 COPY deploy/entrypoint.sh /app/entrypoint.sh
 COPY deploy/start-backend.sh /app/start-backend.sh
 COPY deploy/init-db.sh /app/init-db.sh
@@ -66,16 +61,16 @@ RUN chmod +x /app/entrypoint.sh \
     && chmod +x /app/start-backend.sh \
     && chmod +x /app/init-db.sh
 
-# Exponer puerto 80
+# Exponer puerto (EasyPanel configura el puerto, típicamente 80)
 EXPOSE 80
 
-# Health check (nginx sirve /health)
+# Health check (Flask sirve /health)
 HEALTHCHECK --interval=30s --timeout=10s --start-period=40s --retries=3 \
     CMD curl -f http://localhost/health || exit 1
 
 # Usar entrypoint
 ENTRYPOINT ["/app/entrypoint.sh"]
 
-# Comando por defecto (supervisor)
-CMD ["/usr/bin/supervisord", "-c", "/etc/supervisor/conf.d/supervisord.conf"]
+# Comando por defecto (Flask directamente, EasyPanel maneja Nginx)
+CMD ["/app/start-backend.sh"]
 

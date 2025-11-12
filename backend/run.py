@@ -2,9 +2,11 @@ from app import create_app
 import os
 import sys
 
-# CRÍTICO: Forzar PORT=3005 ANTES de importar cualquier cosa
-# Esto asegura que Flask siempre use el puerto correcto
-os.environ['PORT'] = '3005'
+# EasyPanel maneja Nginx automáticamente
+# Flask debe escuchar en el puerto que EasyPanel configure (por defecto 80)
+# Si PORT no está configurado, usar 80
+if 'PORT' not in os.environ:
+    os.environ['PORT'] = '80'
 
 try:
     config_name = os.getenv('FLASK_ENV', 'production')
@@ -15,15 +17,15 @@ try:
     print("✅ Aplicación Flask creada correctamente")
     
     if __name__ == '__main__':
-        # SIEMPRE usar puerto 3005 - hardcoded, sin excepciones
-        # Nginx usa puerto 80, Flask usa puerto 3005
-        port = 3005
+        # EasyPanel maneja Nginx automáticamente
+        # Flask escucha en el puerto configurado por EasyPanel (típicamente 80)
+        port = int(os.environ.get('PORT', 80))
         
         print(f"🌐 Iniciando servidor Flask en 0.0.0.0:{port}")
-        print(f"📋 PORT forzado a 3005 (Nginx usa 80)")
+        print(f"📋 EasyPanel maneja el reverse proxy automáticamente")
         
-        # Iniciar Flask con puerto 3005 explícitamente
-        app.run(debug=False, host='0.0.0.0', port=3005, use_reloader=False)
+        # Iniciar Flask en el puerto configurado
+        app.run(debug=False, host='0.0.0.0', port=port, use_reloader=False)
 except Exception as e:
     print(f"❌ ERROR CRÍTICO al crear/iniciar la aplicación: {e}", file=sys.stderr)
     import traceback
