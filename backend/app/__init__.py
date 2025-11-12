@@ -12,6 +12,13 @@ migrate = Migrate()
 def create_app(config_name='default'):
     app = Flask(__name__)
     
+    # Configurar logging
+    import logging
+    logging.basicConfig(
+        level=logging.INFO,
+        format='%(asctime)s - %(name)s - %(levelname)s - %(message)s'
+    )
+    
     # Cargar configuración
     app.config.from_object(config[config_name])
     
@@ -47,11 +54,42 @@ def create_app(config_name='default'):
     
     @jwt.invalid_token_loader
     def invalid_token_callback(error):
+        import logging
+        logger = logging.getLogger(__name__)
+        logger.error(f"❌ Token inválido: {error}")
         return jsonify({'error': 'Token inválido', 'details': str(error)}), 401
     
     @jwt.unauthorized_loader
     def missing_token_callback(error):
+        import logging
+        logger = logging.getLogger(__name__)
+        logger.error(f"❌ Token no proporcionado: {error}")
         return jsonify({'error': 'Token no proporcionado', 'details': str(error)}), 401
+    
+    @jwt.needs_fresh_token_loader
+    def token_not_fresh_callback(jwt_header, jwt_payload):
+        import logging
+        logger = logging.getLogger(__name__)
+        logger.warning("⚠️ Token no es fresh")
+        return jsonify({'error': 'Token no es fresh'}), 401
+    
+    # Manejar errores de validación (422)
+    @app.errorhandler(422)
+    def handle_validation_error(e):
+        """Manejar errores de validación de Flask-JWT-Extended o Flask"""
+        return jsonify({
+            'error': 'Error de validación',
+            'details': str(e.description) if hasattr(e, 'description') else str(e)
+        }), 422
+    
+    # Manejar errores de BadRequest (400)
+    @app.errorhandler(400)
+    def handle_bad_request(e):
+        """Manejar errores de solicitud incorrecta"""
+        return jsonify({
+            'error': 'Solicitud incorrecta',
+            'details': str(e.description) if hasattr(e, 'description') else str(e)
+        }), 400
     
     # Registrar blueprints
     from app.routes.health import health_bp

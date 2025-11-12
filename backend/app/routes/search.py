@@ -2,22 +2,36 @@ from flask import Blueprint, request, jsonify
 from flask_jwt_extended import jwt_required, get_jwt_identity
 from datetime import datetime
 import asyncio
+import logging
 from app import db
 from app.models import User, SearchQuery, Lead
 from app.middleware.auth import require_permission
 
 search_bp = Blueprint('search', __name__)
+logger = logging.getLogger(__name__)
 
 @search_bp.route('/start', methods=['POST'])
 @jwt_required()
 @require_permission('create_search')
 def start_search():
     """Iniciar una búsqueda de leads"""
-    data = request.get_json()
+    try:
+        logger.info(f"🔍 Iniciando búsqueda - Headers: {dict(request.headers)}")
+        data = request.get_json(force=True)  # force=True para manejar Content-Type incorrecto
+        logger.info(f"📦 Datos recibidos: {data}")
+    except Exception as e:
+        logger.error(f"❌ Error al procesar JSON: {e}")
+        return jsonify({'error': 'Error al procesar JSON', 'details': str(e)}), 400
+    
     user_id = get_jwt_identity()
+    logger.info(f"👤 Usuario ID: {user_id}")
     
     if not data or not data.get('query') or not data.get('location') or not data.get('source'):
-        return jsonify({'error': 'Query, location y source son requeridos'}), 400
+        logger.warning(f"⚠️ Datos incompletos: {data}")
+        return jsonify({
+            'error': 'Query, location y source son requeridos',
+            'received': data
+        }), 400
     
     source = data['source']
     if source not in ['google_maps', 'yelp']:
