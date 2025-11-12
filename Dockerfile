@@ -20,6 +20,8 @@ RUN apt-get update && apt-get install -y \
     nginx \
     supervisor \
     postgresql-client \
+    libpq-dev \
+    gcc \
     curl \
     && rm -rf /var/lib/apt/lists/*
 
