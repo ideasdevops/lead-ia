@@ -1,8 +1,11 @@
 from setuptools import setup, find_packages
 
-
-with open('README.md', 'r') as f:
-    long_description = f.read()
+# Leer README.md si existe
+try:
+    with open('README.md', 'r', encoding='utf-8') as f:
+        long_description = f.read()
+except FileNotFoundError:
+    long_description = 'Lead generation scripts for Lead-IA'
 
 VERSION = '1.0.1'
 
