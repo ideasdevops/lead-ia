@@ -1,0 +1,46 @@
+{
+  "name": "lead-ia",
+  "description": "Sistema completo de generación de leads con frontend React y backend Flask",
+  "version": "1.0.0",
+  "repository": "git@github.com:ideasdevops/lead-ia.git",
+  "type": "docker",
+  "dockerfile": "Dockerfile",
+  "buildContext": ".",
+  "port": 80,
+  "protocol": "http",
+  "healthCheck": {
+    "path": "/health",
+    "interval": 30,
+    "timeout": 10,
+    "startPeriod": 40,
+    "retries": 3
+  },
+  "volumes": [
+    {
+      "name": "logs",
+      "path": "/app/logs",
+      "size": "1GB",
+      "description": "Logs de aplicación, nginx y supervisor"
+    },
+    {
+      "name": "database",
+      "path": "/app/database",
+      "size": "10GB",
+      "description": "Datos persistentes y archivos de inicialización"
+    }
+  ],
+  "environment": {
+    "FLASK_ENV": "production",
+    "SECRET_KEY": "{{SECRET_KEY}}",
+    "JWT_SECRET_KEY": "{{JWT_SECRET_KEY}}",
+    "DATABASE_URL": "{{DATABASE_URL}}",
+    "CORS_ORIGINS": "{{CORS_ORIGINS}}",
+    "INIT_DB": "true"
+  },
+  "resources": {
+    "memory": "1GB",
+    "cpu": "1"
+  },
+  "restartPolicy": "always"
+}
+

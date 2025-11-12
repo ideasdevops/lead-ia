@@ -1,0 +1,26 @@
+name: Docker Build Test
+
+on:
+  push:
+    branches: [ main, develop ]
+  pull_request:
+    branches: [ main, develop ]
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    
+    steps:
+    - uses: actions/checkout@v3
+    
+    - name: Set up Docker Buildx
+      uses: docker/setup-buildx-action@v2
+    
+    - name: Build Docker image
+      run: |
+        docker build -t lead-ia:test .
+    
+    - name: Test Docker image
+      run: |
+        docker run --rm lead-ia:test /bin/bash -c "echo 'Docker image built successfully'"
+
