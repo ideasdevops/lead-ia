@@ -38,9 +38,10 @@ WORKDIR /app
 COPY backend/requirements.txt /app/backend/
 RUN pip install --no-cache-dir -r /app/backend/requirements.txt
 
-# Instalar py_lead_generation
+# Instalar py_lead_generation (copiar setup.py también)
 COPY py_lead_generation/ /app/py_lead_generation/
-RUN pip install --no-cache-dir -e /app/py_lead_generation/
+COPY setup.py /app/
+RUN pip install --no-cache-dir -e /app/
 
 # Copiar código del backend
 COPY backend/ /app/backend/
