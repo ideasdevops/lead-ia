@@ -11,20 +11,28 @@ migrate = Migrate()
 
 def create_app(config_name='default'):
     app = Flask(__name__)
+    
+    # Cargar configuración
     app.config.from_object(config[config_name])
     
-    # Verificar y corregir DATABASE_URL si es necesario (por si acaso)
+    # CRÍTICO: Convertir postgres:// a postgresql:// ANTES de inicializar SQLAlchemy
+    # SQLAlchemy requiere postgresql:// y falla con postgres://
     db_url = app.config.get('SQLALCHEMY_DATABASE_URI', '')
-    if db_url and isinstance(db_url, str) and db_url.startswith('postgres://'):
-        app.config['SQLALCHEMY_DATABASE_URI'] = db_url.replace('postgres://', 'postgresql://', 1)
-        print(f"⚠️  Corregido DATABASE_URL en create_app: postgres:// -> postgresql://")
-    
-    # Debug: mostrar URL de base de datos (sin contraseña)
-    if db_url:
+    if db_url and isinstance(db_url, str):
+        original_url = db_url
+        # Convertir postgres:// a postgresql://
+        if db_url.startswith('postgres://'):
+            db_url = db_url.replace('postgres://', 'postgresql://', 1)
+            app.config['SQLALCHEMY_DATABASE_URI'] = db_url
+            print(f"⚠️  CONVERTIDO postgres:// -> postgresql:// en create_app")
+            print(f"   Original: {original_url[:30]}...")
+            print(f"   Nuevo:    {db_url[:30]}...")
+        
+        # Debug: mostrar URL de base de datos (sin contraseña)
         safe_url = db_url.split('@')[-1] if '@' in db_url else db_url
         print(f"📦 Usando base de datos: ...@{safe_url}")
     
-    # Inicializar extensiones
+    # Inicializar extensiones (ahora con la URL correcta)
     db.init_app(app)
     jwt.init_app(app)
     migrate.init_app(app, db)

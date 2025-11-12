@@ -17,10 +17,14 @@ class Config:
             "Ejemplo: postgresql://usuario:contraseña@cloud_lead-ia-db:5432/leadia-db"
         )
     
-    # Convertir postgres:// a postgresql:// si es necesario
+    # CRÍTICO: Convertir postgres:// a postgresql:// ANTES de asignar
+    # SQLAlchemy NO puede usar postgres://, solo postgresql://
     if isinstance(_db_url, str) and _db_url.startswith('postgres://'):
+        original = _db_url
         _db_url = _db_url.replace('postgres://', 'postgresql://', 1)
-        print(f"⚠️  Convertido postgres:// a postgresql:// en DATABASE_URL")
+        print(f"⚠️  [CONFIG] Convertido postgres:// -> postgresql://")
+        print(f"   Original: {original[:50]}...")
+        print(f"   Nuevo:    {_db_url[:50]}...")
     
     SQLALCHEMY_DATABASE_URI = _db_url
     SQLALCHEMY_TRACK_MODIFICATIONS = False

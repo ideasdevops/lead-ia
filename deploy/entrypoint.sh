@@ -78,11 +78,17 @@ else
 fi
 
 # Inicializar base de datos si es necesario
-if [ "$INIT_DB" = "true" ] || [ ! -f /app/database/.initialized ]; then
-    echo "📦 Inicializando base de datos..."
-    /app/init-db.sh
-    touch /app/database/.initialized
-    echo "✅ Base de datos inicializada"
+# Solo inicializar una vez para evitar recrear tablas en cada reinicio
+if [ "$INIT_DB" = "true" ] && [ ! -f /app/database/.initialized ]; then
+    echo "📦 Inicializando base de datos (primera vez)..."
+    if /app/init-db.sh; then
+        touch /app/database/.initialized
+        echo "✅ Base de datos inicializada correctamente"
+    else
+        echo "⚠️  Error al inicializar base de datos, continuando..."
+    fi
+elif [ -f /app/database/.initialized ]; then
+    echo "ℹ️  Base de datos ya inicializada (omitiendo init_db)"
 fi
 
 # Ejecutar comando pasado como argumento o supervisor por defecto
