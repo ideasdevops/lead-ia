@@ -1,9 +1,10 @@
-from flask import Flask, jsonify, request
+from flask import Flask, jsonify, request, send_from_directory
 from flask_sqlalchemy import SQLAlchemy
 from flask_jwt_extended import JWTManager
 from flask_cors import CORS
 from flask_migrate import Migrate
 from config import config
+import os
 
 db = SQLAlchemy()
 jwt = JWTManager()
@@ -126,6 +127,7 @@ def create_app(config_name='default'):
     from app.routes.roles import roles_bp
     from app.routes.dashboard import dashboard_bp
     
+    # Registrar blueprints PRIMERO (tienen prioridad sobre la ruta catch-all)
     app.register_blueprint(health_bp)  # Sin prefijo para /health
     app.register_blueprint(auth_bp, url_prefix='/api/auth')
     app.register_blueprint(leads_bp, url_prefix='/api/leads')
@@ -133,6 +135,27 @@ def create_app(config_name='default'):
     app.register_blueprint(users_bp, url_prefix='/api/users')
     app.register_blueprint(roles_bp, url_prefix='/api/roles')
     app.register_blueprint(dashboard_bp, url_prefix='/api/dashboard')
+    
+    # Servir archivos estáticos del frontend (AL FINAL, después de todos los blueprints)
+    # El frontend está construido en /app/frontend/dist
+    frontend_dist = os.path.join(os.path.dirname(os.path.dirname(os.path.dirname(__file__))), 'frontend', 'dist')
+    
+    @app.route('/', defaults={'path': ''})
+    @app.route('/<path:path>')
+    def serve_frontend(path):
+        """Servir el frontend construido - esta ruta catch-all debe estar al final"""
+        # Los blueprints ya manejan /health y /api/*, así que esta ruta solo se ejecuta
+        # para rutas que no coinciden con ningún blueprint
+        
+        # Si el path existe como archivo estático, servirlo
+        if path and os.path.exists(os.path.join(frontend_dist, path)):
+            return send_from_directory(frontend_dist, path)
+        
+        # Si no, servir index.html (para SPA routing)
+        if os.path.exists(os.path.join(frontend_dist, 'index.html')):
+            return send_from_directory(frontend_dist, 'index.html')
+        
+        return jsonify({'error': 'Frontend not found'}), 404
     
     # NO crear tablas aquí - se crean en init_db.py
     # Esto evita errores y recreación innecesaria en cada reinicio
