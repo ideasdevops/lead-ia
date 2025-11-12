@@ -1,5 +1,5 @@
 #!/bin/bash
-set -e
+# No usar set -e aquí porque queremos continuar aunque falle la verificación de DB
 
 echo "🚀 Iniciando Lead-IA..."
 
@@ -17,33 +17,43 @@ if [ -n "$DATABASE_URL" ] && [ "${SKIP_DB_CHECK:-false}" != "true" ]; then
     echo "⏳ Verificando conexión a PostgreSQL..."
     
     # Extraer host y puerto de DATABASE_URL usando Python para parsing más robusto
-    DB_INFO=$(python3 -c "
+    DB_INFO=$(python3 << 'PYTHON_SCRIPT'
 import os
 import re
+import sys
+
 url = os.environ.get('DATABASE_URL', '')
-if url:
-    # Formato: postgresql://user:pass@host:port/dbname
-    match = re.search(r'@([^:]+):(\d+)', url)
-    if match:
-        print(f'{match.group(1)}:{match.group(2)}')
-    else:
-        # Intentar sin puerto explícito
-        match = re.search(r'@([^/]+)', url)
-        if match:
-            print(f'{match.group(1)}:5432')
-" 2>/dev/null || echo "")
+if not url:
+    sys.exit(1)
+
+# Formato: postgresql://user:pass@host:port/dbname
+# O: postgresql://user:pass@host/dbname
+match = re.search(r'@([^:/]+)(?::(\d+))?(?:/|$)', url)
+if match:
+    host = match.group(1)
+    port = match.group(2) if match.group(2) else '5432'
+    print(f'{host}:{port}')
+    sys.exit(0)
+else:
+    sys.exit(1)
+PYTHON_SCRIPT
+)
     
-    if [ -n "$DB_INFO" ]; then
+    if [ $? -eq 0 ] && [ -n "$DB_INFO" ]; then
         DB_HOST=$(echo $DB_INFO | cut -d: -f1)
         DB_PORT=$(echo $DB_INFO | cut -d: -f2)
         
         # Verificar que no sea un placeholder
         if [ "$DB_HOST" != "host" ] && [ "$DB_HOST" != "localhost" ] && [ "$DB_HOST" != "127.0.0.1" ]; then
-            MAX_RETRIES=10
+            MAX_RETRIES=5
             RETRY_COUNT=0
             echo "Intentando conectar a PostgreSQL en $DB_HOST:$DB_PORT..."
             
-            until pg_isready -h "$DB_HOST" -p "$DB_PORT" -t 2 2>/dev/null || [ $RETRY_COUNT -ge $MAX_RETRIES ]; do
+            while [ $RETRY_COUNT -lt $MAX_RETRIES ]; do
+                if pg_isready -h "$DB_HOST" -p "$DB_PORT" -t 2 2>/dev/null; then
+                    echo "✅ PostgreSQL disponible en $DB_HOST:$DB_PORT"
+                    break
+                fi
                 RETRY_COUNT=$((RETRY_COUNT + 1))
                 echo "Esperando PostgreSQL... (intento $RETRY_COUNT/$MAX_RETRIES)"
                 sleep 3
@@ -52,14 +62,12 @@ if url:
             if [ $RETRY_COUNT -ge $MAX_RETRIES ]; then
                 echo "⚠️  ADVERTENCIA: No se pudo conectar a PostgreSQL después de $MAX_RETRIES intentos"
                 echo "   Continuando de todas formas. La aplicación intentará conectarse al iniciar."
-            else
-                echo "✅ PostgreSQL disponible en $DB_HOST:$DB_PORT"
             fi
         else
-            echo "ℹ️  Host de PostgreSQL parece ser un placeholder, omitiendo verificación"
+            echo "ℹ️  Host de PostgreSQL parece ser un placeholder ($DB_HOST), omitiendo verificación"
         fi
     else
-        echo "ℹ️  No se pudo parsear DATABASE_URL, omitiendo verificación"
+        echo "ℹ️  No se pudo parsear DATABASE_URL correctamente, omitiendo verificación"
     fi
 else
     if [ "${SKIP_DB_CHECK:-false}" = "true" ]; then
