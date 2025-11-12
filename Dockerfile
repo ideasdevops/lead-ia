@@ -6,7 +6,7 @@ WORKDIR /app/frontend
 
 # Copiar archivos de dependencias
 COPY frontend/package*.json ./
-RUN npm ci
+RUN npm ci --legacy-peer-deps
 
 # Copiar código fuente y construir
 COPY frontend/ ./
