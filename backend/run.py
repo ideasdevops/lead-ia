@@ -11,9 +11,21 @@ try:
     print("✅ Aplicación Flask creada correctamente")
     
     if __name__ == '__main__':
-        port = int(os.environ.get('PORT', 5000))
-        print(f"🌐 Iniciando servidor en 0.0.0.0:{port}")
-        app.run(debug=False, host='0.0.0.0', port=port)
+        # IMPORTANTE: Flask debe usar puerto 5000, NO 80 (que es para Nginx)
+        # Si PORT está configurado como 80, forzar 5000
+        port_env = os.environ.get('PORT', '5000')
+        try:
+            port = int(port_env)
+            # Si el puerto es 80, cambiarlo a 5000 (Nginx usa 80)
+            if port == 80:
+                print(f"⚠️  ADVERTENCIA: PORT=80 está reservado para Nginx, usando 5000")
+                port = 5000
+        except ValueError:
+            print(f"⚠️  ADVERTENCIA: PORT inválido '{port_env}', usando 5000")
+            port = 5000
+        
+        print(f"🌐 Iniciando servidor Flask en 0.0.0.0:{port}")
+        app.run(debug=False, host='0.0.0.0', port=port, use_reloader=False)
 except Exception as e:
     print(f"❌ ERROR CRÍTICO al crear/iniciar la aplicación: {e}", file=sys.stderr)
     import traceback
