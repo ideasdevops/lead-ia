@@ -1,4 +1,4 @@
-from flask import Flask
+from flask import Flask, jsonify
 from flask_sqlalchemy import SQLAlchemy
 from flask_jwt_extended import JWTManager
 from flask_cors import CORS
@@ -37,6 +37,21 @@ def create_app(config_name='default'):
     jwt.init_app(app)
     migrate.init_app(app, db)
     CORS(app, origins=app.config['CORS_ORIGINS'], supports_credentials=True)
+    
+    # Configurar manejo de errores de JWT
+    from flask_jwt_extended.exceptions import JWTDecodeError, NoAuthorizationError
+    
+    @jwt.expired_token_loader
+    def expired_token_callback(jwt_header, jwt_payload):
+        return jsonify({'error': 'Token expirado'}), 401
+    
+    @jwt.invalid_token_loader
+    def invalid_token_callback(error):
+        return jsonify({'error': 'Token inválido', 'details': str(error)}), 401
+    
+    @jwt.unauthorized_loader
+    def missing_token_callback(error):
+        return jsonify({'error': 'Token no proporcionado', 'details': str(error)}), 401
     
     # Registrar blueprints
     from app.routes.health import health_bp
