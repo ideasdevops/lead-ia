@@ -140,6 +140,14 @@ def create_app(config_name='default'):
     # El frontend está construido en /app/frontend/dist
     frontend_dist = os.path.join(os.path.dirname(os.path.dirname(os.path.dirname(__file__))), 'frontend', 'dist')
     
+    # Log para debugging
+    import logging
+    logger = logging.getLogger(__name__)
+    logger.info(f"📁 Frontend dist path: {frontend_dist}")
+    logger.info(f"📁 Frontend dist exists: {os.path.exists(frontend_dist)}")
+    if os.path.exists(frontend_dist):
+        logger.info(f"📁 Frontend dist contents: {os.listdir(frontend_dist)[:10]}")
+    
     @app.route('/', defaults={'path': ''})
     @app.route('/<path:path>')
     def serve_frontend(path):
@@ -147,15 +155,21 @@ def create_app(config_name='default'):
         # Los blueprints ya manejan /health y /api/*, así que esta ruta solo se ejecuta
         # para rutas que no coinciden con ningún blueprint
         
+        logger.debug(f"🌐 Serviendo frontend - path: '{path}', frontend_dist: {frontend_dist}")
+        
         # Si el path existe como archivo estático, servirlo
         if path and os.path.exists(os.path.join(frontend_dist, path)):
+            logger.debug(f"✅ Sirviendo archivo estático: {path}")
             return send_from_directory(frontend_dist, path)
         
         # Si no, servir index.html (para SPA routing)
-        if os.path.exists(os.path.join(frontend_dist, 'index.html')):
+        index_path = os.path.join(frontend_dist, 'index.html')
+        if os.path.exists(index_path):
+            logger.debug(f"✅ Sirviendo index.html para SPA routing")
             return send_from_directory(frontend_dist, 'index.html')
         
-        return jsonify({'error': 'Frontend not found'}), 404
+        logger.warning(f"❌ Frontend not found - path: '{path}', frontend_dist exists: {os.path.exists(frontend_dist)}")
+        return jsonify({'error': 'Frontend not found', 'path': path, 'frontend_dist': frontend_dist}), 404
     
     # NO crear tablas aquí - se crean en init_db.py
     # Esto evita errores y recreación innecesaria en cada reinicio
