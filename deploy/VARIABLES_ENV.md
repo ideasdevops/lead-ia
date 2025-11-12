@@ -25,7 +25,8 @@ INIT_DB=true
 ### Variables Opcionales
 
 ```env
-# Puerto del backend (por defecto: 5000)
+# Puerto del backend (IMPORTANTE: debe ser 5000, NO 80)
+# El puerto 80 está reservado para Nginx
 PORT=5000
 
 # Configuración de JWT (opcional, tiene valores por defecto)
