@@ -38,10 +38,12 @@ WORKDIR /app
 COPY backend/requirements.txt /app/backend/
 RUN pip install --no-cache-dir -r /app/backend/requirements.txt
 
-# Instalar py_lead_generation (copiar setup.py también)
-COPY py_lead_generation/ /app/py_lead_generation/
+# Instalar py_lead_generation
+# Copiar setup.py y py_lead_generation al mismo nivel para que find_packages() funcione
 COPY setup.py /app/
-RUN pip install --no-cache-dir -e /app/
+COPY py_lead_generation/ /app/py_lead_generation/
+WORKDIR /app
+RUN pip install --no-cache-dir -e .
 
 # Copiar código del backend
 COPY backend/ /app/backend/
