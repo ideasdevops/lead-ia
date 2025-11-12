@@ -1,4 +1,4 @@
-from flask import Flask, jsonify
+from flask import Flask, jsonify, request
 from flask_sqlalchemy import SQLAlchemy
 from flask_jwt_extended import JWTManager
 from flask_cors import CORS
@@ -47,9 +47,13 @@ def create_app(config_name='default'):
     
     # Configurar manejo de errores de JWT
     from flask_jwt_extended.exceptions import JWTDecodeError, NoAuthorizationError
+    from werkzeug.exceptions import UnprocessableEntity
     
     @jwt.expired_token_loader
     def expired_token_callback(jwt_header, jwt_payload):
+        import logging
+        logger = logging.getLogger(__name__)
+        logger.warning(f"⚠️ Token expirado para ruta: {request.path if request else 'N/A'}")
         return jsonify({'error': 'Token expirado'}), 401
     
     @jwt.invalid_token_loader
@@ -73,13 +77,35 @@ def create_app(config_name='default'):
         logger.warning("⚠️ Token no es fresh")
         return jsonify({'error': 'Token no es fresh'}), 401
     
-    # Manejar errores de validación (422)
+    # Manejar errores de validación (422) - puede venir de Flask-JWT-Extended o Flask
     @app.errorhandler(422)
     def handle_validation_error(e):
         """Manejar errores de validación de Flask-JWT-Extended o Flask"""
+        import logging
+        logger = logging.getLogger(__name__)
+        error_details = str(e.description) if hasattr(e, 'description') else str(e)
+        
+        # Log detallado del error
+        logger.error(f"❌ Error 422 (Validación): {error_details}")
+        if request:
+            logger.error(f"   Request path: {request.path}")
+            logger.error(f"   Request method: {request.method}")
+            auth_header = request.headers.get('Authorization', 'No Authorization header')
+            logger.error(f"   Authorization header: {auth_header[:50] if len(auth_header) > 50 else auth_header}")
+            logger.error(f"   All headers: {dict(request.headers)}")
+        
+        # Si el error parece ser de JWT, devolver un mensaje más específico
+        if 'token' in error_details.lower() or 'jwt' in error_details.lower():
+            return jsonify({
+                'error': 'Error de autenticación JWT',
+                'details': error_details,
+                'path': request.path if request else None
+            }), 401  # Cambiar a 401 si es un error de JWT
+        
         return jsonify({
             'error': 'Error de validación',
-            'details': str(e.description) if hasattr(e, 'description') else str(e)
+            'details': error_details,
+            'path': request.path if request else None
         }), 422
     
     # Manejar errores de BadRequest (400)
