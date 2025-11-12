@@ -16,10 +16,7 @@ echo "📦 PORT configurado: ${PORT:-5000} (Flask debe usar 5000, Nginx usa 80)"
 # Asegurar que PORT sea 5000 (no 80 que es para Nginx)
 export PORT=5000
 
-# Ejecutar con captura de errores
-python run.py 2>&1 || {
-    echo "❌ ERROR: Flask falló al iniciar"
-    echo "📋 Últimos errores:"
-    exit 1
-}
+# Ejecutar con captura de errores y logging detallado
+# Redirigir stderr a stdout para que supervisor capture todo
+exec python run.py 2>&1
 
