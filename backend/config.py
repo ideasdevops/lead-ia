@@ -7,8 +7,15 @@ class Config:
     
     # Asegurar que DATABASE_URL use el esquema correcto para SQLAlchemy
     # SQLAlchemy requiere 'postgresql://' no 'postgres://'
-    _db_url = os.environ.get('DATABASE_URL') or \
-        'postgresql://postgres:postgres@localhost:5432/lead_ia'
+    # IMPORTANTE: En producción, la base de datos está en un contenedor separado
+    # Usar el nombre del servicio como hostname (ej: cloud_lead-ia-db)
+    _db_url = os.environ.get('DATABASE_URL')
+    if not _db_url:
+        raise ValueError(
+            "DATABASE_URL no está configurada. "
+            "En producción, debe apuntar a un contenedor externo de PostgreSQL. "
+            "Ejemplo: postgresql://usuario:contraseña@cloud_lead-ia-db:5432/leadia-db"
+        )
     
     # Convertir postgres:// a postgresql:// si es necesario
     if isinstance(_db_url, str) and _db_url.startswith('postgres://'):

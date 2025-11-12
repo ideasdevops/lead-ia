@@ -14,9 +14,10 @@ chmod -R 755 /app/database
 
 # Esperar a que PostgreSQL esté disponible (si se usa y está habilitado)
 if [ -n "$DATABASE_URL" ] && [ "${SKIP_DB_CHECK:-false}" != "true" ]; then
-    echo "⏳ Verificando conexión a PostgreSQL..."
+    echo "⏳ Verificando conexión a PostgreSQL (contenedor externo)..."
     
     # Extraer host y puerto de DATABASE_URL usando Python para parsing más robusto
+    # En EasyPanel, el host debe ser el nombre del servicio de PostgreSQL (ej: cloud_lead-ia-db)
     DB_INFO=$(python3 << 'PYTHON_SCRIPT'
 import os
 import re
@@ -43,8 +44,9 @@ PYTHON_SCRIPT
         DB_HOST=$(echo $DB_INFO | cut -d: -f1)
         DB_PORT=$(echo $DB_INFO | cut -d: -f2)
         
-        # Verificar que no sea un placeholder
-        if [ "$DB_HOST" != "host" ] && [ "$DB_HOST" != "localhost" ] && [ "$DB_HOST" != "127.0.0.1" ]; then
+        # Verificar que no sea un placeholder o localhost
+        # En producción, la DB debe estar en un contenedor externo
+        if [ "$DB_HOST" != "host" ] && [ "$DB_HOST" != "localhost" ] && [ "$DB_HOST" != "127.0.0.1" ] && [ "$DB_HOST" != "postgres" ]; then
             MAX_RETRIES=5
             RETRY_COUNT=0
             echo "Intentando conectar a PostgreSQL en $DB_HOST:$DB_PORT..."
