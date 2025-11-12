@@ -55,13 +55,9 @@ def create_app(config_name='default'):
     app.register_blueprint(roles_bp, url_prefix='/api/roles')
     app.register_blueprint(dashboard_bp, url_prefix='/api/dashboard')
     
-    # Crear tablas en la primera ejecución
-    with app.app_context():
-        db.create_all()
-        # Crear superadmin si no existe
-        from app.models import User, Role
-        from app.utils.auth import create_superadmin
-        create_superadmin()
+    # NO crear tablas aquí - se crean en init_db.py
+    # Esto evita errores y recreación innecesaria en cada reinicio
+    # Las tablas se crean una sola vez durante la inicialización
     
     return app
 
