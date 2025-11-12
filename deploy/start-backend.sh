@@ -11,10 +11,10 @@ echo "🚀 Iniciando servidor Flask..."
 echo "📦 Directorio actual: $(pwd)"
 echo "📦 Python: $(python --version)"
 echo "📦 DATABASE_URL configurada: $(if [ -n "$DATABASE_URL" ]; then echo "Sí"; else echo "No"; fi)"
-echo "📦 PORT configurado: ${PORT:-5000} (Flask debe usar 5000, Nginx usa 80)"
+echo "📦 PORT configurado: ${PORT:-3005} (Flask debe usar 3005, Nginx usa 80)"
 
-# Asegurar que PORT sea 5000 (no 80 que es para Nginx)
-export PORT=5000
+# Asegurar que PORT sea 3005 (no 80 que es para Nginx)
+export PORT=3005
 
 # Ejecutar con captura de errores y logging detallado
 # Redirigir stderr a stdout para que supervisor capture todo
